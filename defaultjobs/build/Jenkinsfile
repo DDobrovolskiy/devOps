@@ -1,0 +1,42 @@
+#!groovy
+pipeline {
+    agent any
+    tools {
+        maven 'Maven 3.3.9'
+        jdk 'jdk8'
+    }
+    options {
+        buildDiscarder(logRotator(numToKeepStr: '3', artifactNumToKeepStr: '3'))
+        timestamp()
+    }
+    stages {
+        stage ('Initialize') {
+            steps {
+                sh '''
+                    echo "PATH = ${PATH}"
+                    echo "M2_HOME = ${M2_HOME}"
+                '''
+            }
+        }
+        stage('Testing') {
+            steps {
+                sh 'mvn clean test'
+            }
+        }
+        stage ('Build') {
+            steps {
+                sh 'mvn install'
+            }
+            post {
+                success {
+                    junit 'target/surefire-reports/**/*.xml'
+                }
+            }
+        }
+    }
+    post {
+        always {
+            cleanWs disableDeferredWipeout: true, deleteDir: true
+        }
+    }
+}
